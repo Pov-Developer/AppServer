@@ -1,0 +1,38 @@
+{
+  "name": "loop-server",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon --harmony src/index.js --exec babel-node | bunyan -l DEBUG",
+    "build": "babel src --out-dir dist",
+    "serve": "pm2 start dist/index.js --name loop",
+    "test": "mocha --compilers js:babel-register --reporter spec",
+    "log": "bunyan -l TRACE ./log/app.log | less",
+    "tail": "bunyan -l TRACE ./log/app.log | tail -200 | less"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-cli": "^6.6.5",
+    "babel-preset-es2015": "^6.6.0",
+    "babel-preset-stage-2": "^6.5.0",
+    "babel-register": "^6.7.2",
+    "mocha": "^2.4.5",
+    "nodemon": "^1.9.1",
+    "request": "^2.70.0",
+    "should": "^8.3.0",
+    "supertest": "^1.2.0"
+  },
+  "dependencies": {
+    "body-parser": "^1.15.0",
+    "bunyan": "^1.8.0",
+    "cors": "^2.7.1",
+    "express": "^5.0.0-alpha.2",
+    "express-validation": "^0.5.0",
+    "joi": "^8.0.5",
+    "jsonwebtoken": "^5.7.0",
+    "lodash": "^4.6.1",
+    "mssql": "^3.1.2"
+  }
+}
