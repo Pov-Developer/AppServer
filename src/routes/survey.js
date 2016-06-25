@@ -21,7 +21,8 @@ router.get('/:surveyId/questions', validate(schema.getSurvey), surveyService.get
 // POST SURVEY (CREATE)
 router.post('/', middleware.verifyToken, validate(schema.survey), surveyService.postSurvey);
 
-router.post('/answer', surveyService.answerSurvey);
+// Send the answer
+router.post('/:surveyId/answer', middleware.verifyToken, surveyService.answerSurvey);
 
 // Error handler for survey route
 router.use(surveyService.errorHandler);

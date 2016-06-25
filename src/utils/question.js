@@ -110,8 +110,34 @@ function getAttributeValue(question, currVal) {
 	}
 }
 
+
+function getAnswerValue(question){
+	if(question.questionType === "textBox"){
+		return question.text;
+	}
+	else if(question.questionType == "numberBox"){
+		return question.number;
+	}
+	else if(question.questionType == "sliderScale"){
+		return question.scale.steps[question.scale.selected - 1].choiceId;
+	}
+	else if(question.questionType == "ranking"){
+		return question.choices.reduce((previousValue, currentValue) => previousValue + (previousValue ? "|" : "" ) + currentValue.choiceId, "");
+	}
+	else if(question.questionType == "multipleChoice"){
+		return question.choices.reduce((previousValue, currentValue) => {
+			if(currentValue.checked)
+				return previousValue + (previousValue ? "|" : "" ) + currentValue.choiceId;
+			else
+				return previousValue;
+		}
+			, "");
+	}
+}
+
 export default {
 	getQuestionTypeId,
 	getQuestionAttributesInfo,
-	getAttributeValue
+	getAttributeValue,
+	getAnswerValue
 }

@@ -10,12 +10,13 @@ import schema from '../validators/survey';
 import logger from '../config/log';
 import questionUtils from '../utils/question';
 import constants from '../utils/constants';
+import refData from '../utils/refData';
 
 const connection = db.connection();
 
 const SURVEY_PER_PAGE = 5;
 
-function getAll(req, res, next){
+function getAll(req, res, next) {
 	let page = (req.query.page > 0 ? req.query.page : 0) * SURVEY_PER_PAGE;
 	let request = new sql.Request(connection);
 	request.query(`SELECT surveyId, surveyName, description, createdOn
@@ -37,7 +38,7 @@ function getAll(req, res, next){
 	});
 }
 
-function getSurvey(req, res, next){
+function getSurvey(req, res, next) {
 	let request = new sql.Request(connection);
 	request.query(`SELECT surveyId, surveyName, description, createdOn FROM DBO.SURVEY WHERE surveyId = ${req.params.surveyId}`)
 		.then((recordset) => {
@@ -50,7 +51,7 @@ function getSurvey(req, res, next){
 	});
 }
 
-function getQuestions(req, res, next){
+function getQuestions(req, res, next) {
 	let request = new sql.Request(connection);
 	request.input('CurrentSurveyID', sql.Int, req.params.surveyId);
 	request.execute('DBO.SurveyQuestions_Load')
@@ -77,9 +78,9 @@ function getQuestions(req, res, next){
 				// Set attribute property and its value
 				currentQuestion[constants.QUESTION_ATTRIBUTES[questionAttribute.AttributeName]] = questionUtils.getAttributeValue(questionAttribute);
 			});
-			
+
 			// for choices and slider scale
-			if(recordset[2].length) {
+			if (recordset[2].length) {
 				let question = null;
 				recordset[2].forEach((choice) => {
 					question = questions[choice.QuestionOrder];
@@ -100,7 +101,7 @@ function getQuestions(req, res, next){
 	});
 }
 
-function postSurvey(req, res, next){
+function postSurvey(req, res, next) {
 	let surveyId = null;
 	// Check questions format
 	checkQuestions(req.body.questions);
@@ -128,11 +129,62 @@ function postSurvey(req, res, next){
 		});
 }
 
-function answerSurvey(req, res, next){
-	console.log(req.body);
+function answerSurvey(req, res, next) {
+	let request = new sql.Request(connection);
+	request
+		.input('SurveyID', sql.Int, req.params.surveyId)
+		.input('POVantID', sql.Int, req.profileId)
+		.output('AnswerHeaderID', sql.Int)
+		.execute('DBO.SurveyAnswerHeader_Save')
+		.then((recordset) => {
+			console.log(request.parameters)
+			return req.body.map((question) => {
+				return createQuestionAnswer(request.parameters.AnswerHeaderID.value, question)
+			})
+		})
+		.then((promises) => Promise.all(promises))
+		.then((result) => {
+			console.log(result)
+			res.status(201);
+			res.send(result);
+		})
+		// createQuestionAnswer(10,
+		// 	{
+		// 		"questionId": 120,
+		// 		"questionType": "sliderScale",
+		// 		"title": "Q3",
+		// 		"required": true,
+		// 		"scale": {
+		// 			"name": "Opinion",
+		// 			"steps": [{
+		// 				"choiceId": 2,
+		// 				"text": "Poor"
+		// 			}, {
+		// 				"choiceId": 3,
+		// 				"text": "Neutral"
+		// 			}, {
+		// 				"choiceId": 4,
+		// 				"text": "Great"
+		// 			}, {
+		// 				"choiceId": 1,
+		// 				"text": "Awful"
+		// 			}, {
+		// 				"choiceId": 5,
+		// 				"text": "Amazing"
+		// 			}],
+		// 			"selected": "1"
+		// 		}
+		// 	}).then((result) => {
+		// 	console.log(result);
+		// 	res.send(result)
+		// })
+		//
+		.catch((err) => {
+			return next(err);
+		});
 }
 
-function errorHandler(err, req, res, next){
+function errorHandler(err, req, res, next) {
 	logger.survey.error(err);
 	return next(err);
 }
@@ -214,6 +266,26 @@ function createQuestion(surveyId, profileId, question, index) {
 	request.input('QuestionDetailSet', questionDetails);
 	request.input('EditedBy', sql.Int, profileId);
 	return request.execute('DBO.Question_Save');
+}
+
+function createQuestionAnswer(answerId, question) {
+
+	let qaSet = new sql.Table();
+
+	qaSet.columns.add('QuestionID', sql.Int);
+	qaSet.columns.add('QuestionTypeID', sql.Int);
+	qaSet.columns.add('AnswerValue', sql.VarChar);
+	qaSet.rows.add(question.questionId,
+		refData.getQuestionTypes()[constants.QUESTION_TYPES_REQUEST[question.questionType]],
+		questionUtils.getAnswerValue(question));
+
+	console.log(qaSet.rows);
+
+	console.log(questionUtils.getAnswerValue(question));
+	let request = new sql.Request(connection);
+	request.input('AnswerHeaderID', sql.Int, answerId);
+	request.input('QASet', qaSet);
+	return request.execute('DBO.QuestionAnswerDetail_Save');
 }
 
 export default {
