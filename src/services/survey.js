@@ -21,7 +21,7 @@ function getAll(req, res, next) {
 	let request = new sql.Request(connection);
 	request.query(`SELECT surveyId, surveyName, description, createdOn
                   FROM DBO.SURVEY
-                  ORDER BY surveyId OFFSET ${page} ROWS FETCH NEXT ${SURVEY_PER_PAGE} ROWS ONLY`)
+                  ORDER BY createdOn DESC OFFSET ${page} ROWS FETCH NEXT ${SURVEY_PER_PAGE} ROWS ONLY`)
 		.then((recordset) => {
 			let result = recordset.map((survey) => {
 				return {

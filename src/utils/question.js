@@ -110,7 +110,6 @@ function getAttributeValue(question, currVal) {
 	}
 }
 
-
 function getAnswerValue(question){
 	if(question.questionType === "textBox"){
 		return question.text;
